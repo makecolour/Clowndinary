@@ -37,7 +37,14 @@ router.post('/login', redirectIfAuth, async function(req, res, next) {
     
     if (config) {
       req.session.cloudinaryConfig = config;
-      res.redirect('/dashboard');
+      // Explicitly save the session before redirecting
+      req.session.save((err) => {
+        if (err) {
+          console.error('Session save error:', err);
+          return res.redirect('/login?error=Session error occurred');
+        }
+        res.redirect('/dashboard');
+      });
     } else {
       res.redirect('/login?error=Invalid credentials');
     }
@@ -128,7 +135,7 @@ router.get('/upload', requireAuth, function(req, res, next) {
 });
 
 /* POST upload images */
-router.post('/upload', requireAuth, upload.array('images', 10), async function(req, res, next) {
+router.post('/upload', requireAuth, upload.array('images'), async function(req, res, next) {
   try {
     if (!req.files || req.files.length === 0) {
       return res.redirect('/upload?error=No files selected');

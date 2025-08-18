@@ -9,6 +9,7 @@ class UploadBatch {
       );
       return result.insertId;
     } catch (error) {
+      console.error('Error creating upload batch:', error);
       throw error;
     }
   }
@@ -20,6 +21,7 @@ class UploadBatch {
         [totalFiles, totalSize, batchId]
       );
     } catch (error) {
+      console.error('Error updating batch totals:', error);
       throw error;
     }
   }
@@ -37,55 +39,71 @@ class UploadBatch {
       );
       return rows;
     } catch (error) {
+      console.error('Error finding batches by config ID:', error);
       throw error;
     }
   }
 
   static async findByConfigIdGroupedByDate(configId) {
     try {
-      const [rows] = await pool.execute(
+      // First, get all batches grouped by date
+      const [dateRows] = await pool.execute(
         `SELECT 
-           DATE(ub.created_at) as upload_date,
-           COUNT(DISTINCT ub.id) as batch_count,
-           COUNT(u.id) as total_uploads,
-           SUM(u.file_size) as total_size,
-           JSON_ARRAYAGG(
-             JSON_OBJECT(
-               'batch_id', ub.id,
-               'batch_name', ub.batch_name,
-               'batch_created_at', ub.created_at,
-               'upload_count', (SELECT COUNT(*) FROM uploads WHERE batch_id = ub.id),
-               'batch_size', (SELECT SUM(file_size) FROM uploads WHERE batch_id = ub.id),
-               'uploads', (
-                 SELECT JSON_ARRAYAGG(
-                   JSON_OBJECT(
-                     'id', id,
-                     'original_name', original_name,
-                     'cloudinary_url', cloudinary_url,
-                     'cloudinary_secure_url', cloudinary_secure_url,
-                     'file_size', file_size,
-                     'width', width,
-                     'height', height,
-                     'format', format,
-                     'created_at', created_at
-                   )
-                 ) FROM uploads WHERE batch_id = ub.id
-               )
-             )
-           ) as batches
-         FROM upload_batches ub
-         LEFT JOIN uploads u ON ub.id = u.batch_id
-         WHERE ub.config_id = ?
-         GROUP BY DATE(ub.created_at)
+           DATE(created_at) as upload_date,
+           COUNT(*) as batch_count,
+           SUM(total_files) as total_uploads
+         FROM upload_batches
+         WHERE config_id = ?
+         GROUP BY DATE(created_at)
          ORDER BY upload_date DESC`,
         [configId]
       );
-      
-      return rows.map(row => ({
-        ...row,
-        batches: row.batches || []
-      }));
+
+      // For each date, get the batches and their uploads
+      const result = [];
+      for (const dateRow of dateRows) {
+        // Get batches for this date
+        const [batchRows] = await pool.execute(
+          `SELECT id, batch_name, total_files, total_size, created_at
+           FROM upload_batches
+           WHERE config_id = ? AND DATE(created_at) = ?
+           ORDER BY created_at DESC`,
+          [configId, dateRow.upload_date]
+        );
+
+        // Get uploads for each batch
+        const batches = [];
+        for (const batch of batchRows) {
+          const [uploadRows] = await pool.execute(
+            `SELECT id, original_name, cloudinary_url, cloudinary_secure_url,
+                    file_size, width, height, format, created_at
+             FROM uploads
+             WHERE batch_id = ?
+             ORDER BY created_at`,
+            [batch.id]
+          );
+
+          batches.push({
+            batch_id: batch.id,
+            batch_name: batch.batch_name,
+            batch_created_at: batch.created_at,
+            upload_count: uploadRows.length,
+            batch_size: uploadRows.reduce((sum, upload) => sum + (upload.file_size || 0), 0),
+            uploads: uploadRows
+          });
+        }
+
+        result.push({
+          upload_date: dateRow.upload_date,
+          batch_count: dateRow.batch_count,
+          total_uploads: dateRow.total_uploads,
+          batches: batches
+        });
+      }
+
+      return result;
     } catch (error) {
+      console.error('Error finding batches grouped by date:', error);
       throw error;
     }
   }
@@ -98,6 +116,7 @@ class UploadBatch {
       );
       return rows[0] || null;
     } catch (error) {
+      console.error('Error finding batch by ID:', error);
       throw error;
     }
   }
@@ -126,6 +145,7 @@ class UploadBatch {
         uploads: uploadRows
       };
     } catch (error) {
+      console.error('Error getting batch with uploads:', error);
       throw error;
     }
   }

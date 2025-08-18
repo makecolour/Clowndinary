@@ -18,27 +18,16 @@ A web application built with Express.js that allows users to manage their Cloudi
 - Cloudinary account
 
 ## Installation
-
+[new_code]
 1. Clone the repository:
 ```bash
 git clone <repository-url>
 cd Clowndinary
 ```
-
-2. Install dependencies:
-```bash
-npm install
-```
-
-3. Set up environment variables (optional):
-Create a `.env` file in the root directory:
 ```env
 DB_HOST=localhost
 DB_USER=root
 DB_PASSWORD=your_password
-DB_NAME=clowndinary
-SESSION_SECRET=your_secret_key
-```
 
 4. Start the application:
 ```bash
@@ -62,40 +51,15 @@ npm start
 
 1. Navigate to the Dashboard after login
 2. Click "Upload Images"
-3. Select up to 10 image files
-4. Click "Upload Images"
-5. View your uploaded images on the Dashboard
 
 ### Database Schema
-
-The application creates two main tables:
-
-#### cloudinary_configs
 - `id`: Primary key
 - `api_name`: Cloudinary cloud name (unique)
-- `api_key`: Cloudinary API key
-- `api_secret`: Hashed Cloudinary API secret
-- `created_at`, `updated_at`: Timestamps
 
 #### uploads
-- `id`: Primary key
-- `config_id`: Foreign key to cloudinary_configs
-- `original_name`: Original filename
-- `cloudinary_public_id`: Cloudinary public ID
 - `cloudinary_url`: Cloudinary URL
 - `cloudinary_secure_url`: Cloudinary HTTPS URL
-- `file_size`, `width`, `height`, `format`: Image metadata
-- `created_at`, `updated_at`: Timestamps
-
 ## Security Features
-
-- API secrets are hashed using bcrypt
-- Session-based authentication
-- Input validation and sanitization
-- File type validation (images only)
-- File size limits (10MB per file)
-
-## API Endpoints
 
 - `GET /` - Home page (redirects to login/dashboard)
 - `GET /login` - Login page
