@@ -1,11 +1,12 @@
 require('dotenv').config();
-require('dotenv').config();
 var createError = require('http-errors');
 var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 var session = require('express-session');
+var MySQLStore = require('express-mysql-session')(session);
+var mysql = require('mysql2');
 var { initializeDatabase } = require('./config/database');
 var { setUserLocals } = require('./middleware/auth');
 
@@ -25,8 +26,32 @@ app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
+
+// Configure MySQL session store
+var sessionStore = new MySQLStore({
+  host: process.env.DB_HOST || 'localhost',
+  port: 3306,
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || '',
+  database: process.env.DB_NAME || 'clowndinary',
+  clearExpired: true,
+  checkExpirationInterval: 900000, // 15 minutes
+  expiration: 86400000, // 24 hours
+  createDatabaseTable: true,
+  schema: {
+    tableName: 'sessions',
+    columnNames: {
+      session_id: 'session_id',
+      expires: 'expires',
+      data: 'data'
+    }
+  }
+});
+
 app.use(session({
+  key: 'clowndinary_session',
   secret: process.env.SESSION_SECRET || 'clowndinary-secret-key',
+  store: sessionStore,
   resave: false,
   saveUninitialized: false,
   cookie: { 
