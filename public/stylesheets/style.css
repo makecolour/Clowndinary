@@ -1,0 +1,130 @@
+body {
+  background-color: #f8f9fa;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.navbar-brand {
+  font-weight: bold;
+  font-size: 1.5rem;
+}
+
+.card {
+  border: none;
+  border-radius: 15px;
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.card.shadow {
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.btn {
+  border-radius: 10px;
+  font-weight: 500;
+  transition: all 0.2s ease-in-out;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+.form-control {
+  border-radius: 10px;
+  border: 2px solid #e9ecef;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-control:focus {
+  border-color: #86b7fe;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.alert {
+  border-radius: 10px;
+  border: none;
+}
+
+.navbar {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.text-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-img-top {
+  border-top-left-radius: 15px;
+  border-top-right-radius: 15px;
+}
+
+.upload-preview {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.file-input {
+  position: relative;
+  overflow: hidden;
+  display: inline-block;
+}
+
+.file-input input[type=file] {
+  position: absolute;
+  left: -9999px;
+}
+
+.bg-gradient-primary {
+  background: linear-gradient(45deg, #007bff, #0056b3);
+}
+
+.bg-gradient-success {
+  background: linear-gradient(45deg, #28a745, #1e7e34);
+}
+
+.bg-gradient-info {
+  background: linear-gradient(45deg, #17a2b8, #117a8b);
+}
+
+.batch-container {
+  background: rgba(0, 123, 255, 0.05);
+  border-color: rgba(0, 123, 255, 0.2) !important;
+}
+
+.batch-container h6 {
+  color: #0056b3;
+}
+
+.copy-link-btn {
+  transition: all 0.3s ease;
+}
+
+.copy-link-btn:hover {
+  transform: translateY(-1px);
+}
+
+.btn-group .btn {
+  flex: 1;
+}
+
+@media (max-width: 768px) {
+  .batch-container {
+    margin-bottom: 1rem !important;
+    padding: 1rem !important;
+  }
+  
+  .btn-group {
+    flex-direction: column;
+  }
+  
+  .btn-group .btn {
+    margin-bottom: 0.25rem;
+  }
+}

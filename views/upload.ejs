@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/stylesheets/style.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-cloud-upload-alt me-2"></i>
+                Clowndinary
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/dashboard">
+                    <i class="fas fa-tachometer-alt me-1"></i>
+                    Dashboard
+                </a>
+                <a class="nav-link" href="/upload">
+                    <i class="fas fa-upload me-1"></i>
+                    Upload
+                </a>
+                <form class="d-inline" method="POST" action="/logout">
+                    <button type="submit" class="btn btn-outline-light btn-sm">
+                        <i class="fas fa-sign-out-alt me-1"></i>
+                        Logout
+                    </button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mt-4">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card shadow">
+                    <div class="card-body">
+                        <h2 class="card-title text-center mb-4">
+                            <i class="fas fa-upload me-2"></i>
+                            Upload Images
+                        </h2>
+                        
+                        <% if (locals.error) { %>
+                            <div class="alert alert-danger" role="alert">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                <%= error %>
+                            </div>
+                        <% } %>
+                        
+                        <% if (locals.success) { %>
+                            <div class="alert alert-success" role="alert">
+                                <i class="fas fa-check-circle me-2"></i>
+                                <%= success %>
+                                <% if (locals.query && locals.query.batchId) { %>
+                                    <div class="mt-2">
+                                        <a href="/export-csv/<%= locals.query.batchId %>" class="btn btn-sm btn-success">
+                                            <i class="fas fa-download me-1"></i>
+                                            Export CSV for this batch
+                                        </a>
+                                    </div>
+                                <% } %>
+                            </div>
+                        <% } %>
+
+                        <form method="POST" action="/upload" enctype="multipart/form-data" id="uploadForm">
+                            <div class="mb-4">
+                                <label for="images" class="form-label">Select Images</label>
+                                <input type="file" 
+                                       class="form-control" 
+                                       id="images" 
+                                       name="images" 
+                                       multiple 
+                                       accept="image/*" 
+                                       required>
+                                <div class="form-text">
+                                    Select up to 10 images (JPG, PNG, GIF, etc.). Maximum 10MB per file.
+                                </div>
+                            </div>
+                            
+                            <div id="preview" class="mb-4" style="display: none;">
+                                <h5>Preview:</h5>
+                                <div id="previewContainer" class="row"></div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary w-100" id="uploadBtn">
+                                <i class="fas fa-upload me-2"></i>
+                                Upload Images
+                            </button>
+                        </form>
+                        
+                        <div class="text-center mt-3">
+                            <a href="/dashboard" class="text-decoration-none">
+                                <i class="fas fa-arrow-left me-1"></i>
+                                Back to Dashboard
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    document.getElementById('images').addEventListener('change', function(e) {
+        const files = e.target.files;
+        const preview = document.getElementById('preview');
+        const previewContainer = document.getElementById('previewContainer');
+        
+        if (files.length > 0) {
+            previewContainer.innerHTML = '';
+            preview.style.display = 'block';
+            
+            Array.from(files).forEach(function(file) {
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const col = document.createElement('div');
+                        col.className = 'col-md-3 mb-3';
+                        col.innerHTML = '<div class="card">' +
+                            '<img src="' + e.target.result + '" class="card-img-top" style="height: 150px; object-fit: cover;" alt="' + file.name + '">' +
+                            '<div class="card-body p-2">' +
+                            '<small class="text-truncate d-block" title="' + file.name + '">' + file.name + '</small>' +
+                            '<small class="text-muted">' + Math.round(file.size / 1024) + ' KB</small>' +
+                            '</div></div>';
+                        previewContainer.appendChild(col);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        } else {
+            preview.style.display = 'none';
+        }
+    });
+
+    document.getElementById('uploadForm').addEventListener('submit', function() {
+        const btn = document.getElementById('uploadBtn');
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Uploading...';
+        btn.disabled = true;
+    });
+    </script>
+</body>
+</html>
