@@ -1,26 +1,60 @@
 {
   "apps": [
     {
-      "name": "clowndinary",
+      "name": "clowndinary-web",
       "script": "./bin/www-single",
       "instances": "max",
       "exec_mode": "cluster",
       "env": {
         "NODE_ENV": "development",
-        "PORT": 3000
+        "PORT": 3000,
+        "WORKER_TYPE": "web"
       },
       "env_production": {
         "NODE_ENV": "production",
-        "PORT": 3000
+        "PORT": 3000,
+        "WORKER_TYPE": "web"
       },
-      "log_file": "./logs/app.log",
-      "error_file": "./logs/error.log",
-      "out_file": "./logs/out.log",
+      "log_file": "./logs/web.log",
+      "error_file": "./logs/web-error.log",
+      "out_file": "./logs/web-out.log",
       "log_date_format": "YYYY-MM-DD HH:mm:ss Z",
       "merge_logs": true,
       "max_restarts": 10,
       "min_uptime": "10s",
       "max_memory_restart": "1G",
+      "watch": false,
+      "ignore_watch": [
+        "node_modules",
+        "logs",
+        ".git"
+      ]
+    },
+    {
+      "name": "clowndinary-clustered",
+      "script": "./bin/www",
+      "instances": 1,
+      "exec_mode": "fork",
+      "env": {
+        "NODE_ENV": "development",
+        "PORT": 3000,
+        "NODE_CLUSTERS": 4,
+        "SYNC_WORKER_RATIO": 0.3
+      },
+      "env_production": {
+        "NODE_ENV": "production",
+        "PORT": 3000,
+        "NODE_CLUSTERS": "max",
+        "SYNC_WORKER_RATIO": 0.3
+      },
+      "log_file": "./logs/clustered.log",
+      "error_file": "./logs/clustered-error.log",
+      "out_file": "./logs/clustered-out.log",
+      "log_date_format": "YYYY-MM-DD HH:mm:ss Z",
+      "merge_logs": true,
+      "max_restarts": 5,
+      "min_uptime": "30s",
+      "max_memory_restart": "2G",
       "watch": false,
       "ignore_watch": [
         "node_modules",

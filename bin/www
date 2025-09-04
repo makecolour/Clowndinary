@@ -21,24 +21,42 @@ var port = normalizePort(process.env.PORT || '3000');
  * Clustering configuration
  */
 const numCPUs = clusterConfig.workers;
+const syncWorkers = Math.max(1, Math.floor(numCPUs * 0.3)); // 30% for sync workers
+const webWorkers = numCPUs - syncWorkers;
 let workerRestarts = {};
 
 if (cluster.isMaster) {
   if (clusterConfig.logging) {
     console.log(`Master ${process.pid} is running`);
-    console.log(`Starting ${numCPUs} workers...`);
+    console.log(`Starting ${webWorkers} web workers and ${syncWorkers} sync workers...`);
     console.log(`CPU cores available: ${os.cpus().length}`);
   }
 
-  // Fork workers
-  for (let i = 0; i < numCPUs; i++) {
-    const worker = cluster.fork();
+  // Initialize sync coordinator
+  const SyncCoordinator = require('../services/syncCoordinator');
+  global.syncCoordinator = new SyncCoordinator();
+
+  // Track worker types since env variables aren't reliably accessible
+  const workerTypes = new Map();
+
+  // Fork web workers
+  for (let i = 0; i < webWorkers; i++) {
+    const worker = cluster.fork({ WORKER_TYPE: 'web' });
+    workerTypes.set(worker.id, 'web');
+    workerRestarts[worker.id] = 0;
+  }
+
+  // Fork sync workers
+  for (let i = 0; i < syncWorkers; i++) {
+    const worker = cluster.fork({ WORKER_TYPE: 'sync' });
+    workerTypes.set(worker.id, 'sync');
     workerRestarts[worker.id] = 0;
   }
 
   cluster.on('exit', (worker, code, signal) => {
+    const workerType = workerTypes.get(worker.id) || 'web';
     if (clusterConfig.logging) {
-      console.log(`Worker ${worker.process.pid} died with code ${code} and signal ${signal}`);
+      console.log(`Worker ${worker.process.pid} (${workerType}) died with code ${code} and signal ${signal}`);
     }
 
     if (clusterConfig.autoRestart) {
@@ -51,19 +69,28 @@ if (cluster.isMaster) {
         }
         
         setTimeout(() => {
-          const newWorker = cluster.fork();
+          const newWorker = cluster.fork({ WORKER_TYPE: workerType });
+          workerTypes.set(newWorker.id, workerType);
           workerRestarts[newWorker.id] = workerRestarts[worker.id];
           delete workerRestarts[worker.id];
+          workerTypes.delete(worker.id);
         }, clusterConfig.restartDelay);
       } else {
         console.error(`Worker ${worker.id} exceeded maximum restart attempts (${clusterConfig.maxRestarts})`);
+        workerTypes.delete(worker.id);
       }
     }
   });
 
   cluster.on('online', (worker) => {
+    const workerType = workerTypes.get(worker.id) || 'web';
     if (clusterConfig.logging) {
-      console.log(`Worker ${worker.process.pid} is online`);
+      console.log(`${workerType} worker ${worker.process.pid} is online`);
+    }
+    
+    // Notify sync coordinator about sync workers
+    if (workerType === 'sync' && global.syncCoordinator) {
+      global.syncCoordinator.registerSyncWorker(worker.id);
     }
   });
 
@@ -83,34 +110,55 @@ if (cluster.isMaster) {
   });
 
 } else {
-  // Workers can share any TCP port
-  app.set('port', port);
+  const workerType = process.env.WORKER_TYPE || 'web';
+  
+  if (workerType === 'web') {
+    // Web workers handle HTTP requests
+    app.set('port', port);
 
-  /**
-   * Create HTTP server.
-   */
+    /**
+     * Create HTTP server.
+     */
 
-  var server = http.createServer(app);
+    var server = http.createServer(app);
 
-  /**
-   * Listen on provided port, on all network interfaces.
-   */
+    /**
+     * Listen on provided port, on all network interfaces.
+     */
 
-  server.listen(port);
-  server.on('error', onError);
-  server.on('listening', onListening);
+    server.listen(port);
+    server.on('error', onError);
+    server.on('listening', onListening);
 
-  if (clusterConfig.logging) {
-    console.log(`Worker ${process.pid} started and listening on port ${port}`);
-  }
+    if (clusterConfig.logging) {
+      console.log(`Web worker ${process.pid} started and listening on port ${port}`);
+    }
 
-  // Graceful shutdown for workers
-  process.on('SIGTERM', () => {
-    console.log(`Worker ${process.pid} received SIGTERM, shutting down gracefully...`);
-    server.close(() => {
-      process.exit(0);
+    // Graceful shutdown for workers
+    process.on('SIGTERM', () => {
+      console.log(`Web worker ${process.pid} received SIGTERM, shutting down gracefully...`);
+      server.close(() => {
+        process.exit(0);
+      });
     });
-  });
+  } else {
+    // Sync workers handle background sync tasks
+    const SyncCoordinator = require('../services/syncCoordinator');
+    global.syncCoordinator = new SyncCoordinator();
+    
+    if (clusterConfig.logging) {
+      console.log(`Sync worker ${process.pid} started and ready for sync tasks`);
+    }
+
+    // Graceful shutdown for sync workers
+    process.on('SIGTERM', () => {
+      console.log(`Sync worker ${process.pid} received SIGTERM, shutting down gracefully...`);
+      // Allow current sync operations to complete
+      setTimeout(() => {
+        process.exit(0);
+      }, 5000);
+    });
+  }
 }
 
 /**

@@ -93,10 +93,17 @@ router.get('/', requireAuth, async function(req, res, next) {
     // Get active jobs
     const activeJobs = await SyncJob.getActiveJobs(configId);
 
+    // Get cluster stats if available
+    let clusterStats = null;
+    if (global.syncCoordinator) {
+      clusterStats = global.syncCoordinator.getSyncStats();
+    }
+
     res.render('sync', {
       title: 'Sync to Bunny Storage - Clowndinary',
       recentJobs: recentJobs,
       activeJobs: activeJobs,
+      clusterStats: clusterStats,
       success: req.query.success,
       error: req.query.error
     });
@@ -106,6 +113,7 @@ router.get('/', requireAuth, async function(req, res, next) {
       title: 'Sync to Bunny Storage - Clowndinary',
       recentJobs: [],
       activeJobs: [],
+      clusterStats: null,
       success: null,
       error: 'Error loading sync data'
     });
@@ -141,25 +149,34 @@ router.post('/start', requireAuth, async function(req, res, next) {
     }
 
     // Prepare sync options with user-defined or default values
+    const clusterConfig = require('../config/cluster');
     const syncOptions = {
-      batchSize: Math.max(1, Math.min(parseInt(batchSize) || 3, 10)), // Limit between 1-10
+      batchSize: Math.max(1, Math.min(parseInt(batchSize) || clusterConfig.sync?.defaultBatchSize || 3, 10)), // Limit between 1-10
       downloadRetries: Math.max(1, Math.min(parseInt(downloadRetries) || 3, 5)), // Limit between 1-5
       uploadRetries: Math.max(1, Math.min(parseInt(uploadRetries) || 3, 5)), // Limit between 1-5
-      downloadTimeout: Math.max(10000, Math.min(parseInt(downloadTimeout) || 45000, 120000)) // 10s-120s
+      downloadTimeout: Math.max(10000, Math.min(parseInt(downloadTimeout) || 45000, 120000)), // 10s-120s
+      maxWorkers: Math.min(clusterConfig.sync?.maxWorkersPerJob || 4, 6) // Limit max workers
     };
 
     console.log('Starting sync with options:', syncOptions);
 
-    // Start sync job in background with enhanced options
+    // Start sync job in background with enhanced distributed processing
     SyncService.syncCloudinaryToBunny(configId, startDate, endDate, syncOptions)
       .then(result => {
         console.log('Sync job completed:', result);
+        if (result.mode === 'distributed') {
+          console.log(`📊 Distributed sync used ${result.workersAssigned} workers for ${result.totalBatches} batches`);
+        }
       })
       .catch(error => {
         console.error('Sync job failed:', error);
       });
 
-    res.redirect('/sync?success=Sync job started successfully with enhanced retry logic');
+    const successMessage = global.syncCoordinator ? 
+      'Distributed sync job started with enhanced multi-worker processing' :
+      'Sync job started with enhanced retry logic';
+    
+    res.redirect('/sync?success=' + encodeURIComponent(successMessage));
   } catch (error) {
     console.error('Start sync error:', error);
     res.redirect('/sync?error=Error starting sync job');
@@ -223,6 +240,27 @@ router.get('/api/job/:jobId/progress', requireAuth, async function(req, res, nex
   } catch (error) {
     console.error('Sync progress API error:', error);
     res.status(500).json({ error: 'Error fetching progress' });
+  }
+});
+
+// GET cluster statistics (AJAX endpoint)
+router.get('/api/cluster/stats', requireAuth, function(req, res, next) {
+  try {
+    if (global.syncCoordinator) {
+      const stats = global.syncCoordinator.getSyncStats();
+      res.json({
+        available: true,
+        ...stats
+      });
+    } else {
+      res.json({
+        available: false,
+        message: 'Distributed sync not available'
+      });
+    }
+  } catch (error) {
+    console.error('Cluster stats API error:', error);
+    res.status(500).json({ error: 'Error fetching cluster stats' });
   }
 });
 
