@@ -43,6 +43,16 @@
                             Select multiple images (JPG, PNG, GIF, etc.).
                         </div>
                     </div>
+                        <div class="mb-4">
+                            <label for="storageProvider" class="form-label">Choose Storage Provider</label>
+                            <select class="form-select" id="storageProvider" name="storageProvider" required>
+                                <option value="cloudinary">Cloudinary</option>
+                                <option value="bunny">Bunny Storage</option>
+                            </select>
+                            <div class="form-text">
+                                Select where you want to upload your images.
+                            </div>
+                        </div>
                     
                     <div id="preview" class="mb-4" style="display: none;">
                         <h5>Preview:</h5>

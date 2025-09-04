@@ -1,5 +1,6 @@
 var express = require('express');
 var router = express.Router();
+var path = require('path');
 var CloudinaryConfig = require('../models/CloudinaryConfig');
 var Upload = require('../models/Upload');
 var UploadBatch = require('../models/UploadBatch');
@@ -141,40 +142,72 @@ router.post('/upload', requireAuth, upload.array('images'), async function(req, 
       return res.redirect('/upload?error=No files selected');
     }
 
+    const storageProvider = req.body.storageProvider;
     const config = req.session.cloudinaryConfig;
-    CloudinaryService.configureCloudinary(config.api_name, config.api_key, config.api_secret_raw);
-
-    // Create a new batch
     const batchName = `Upload ${new Date().toISOString().replace(/[:.]/g, '-')}`;
     const batchId = await UploadBatch.create(config.id, batchName);
 
-    const uploadResults = await CloudinaryService.uploadMultipleImages(req.files);
-    
+    let uploadResults = [];
     let totalSize = 0;
-    // Save upload info to database
-    for (let i = 0; i < uploadResults.length; i++) {
-      const result = uploadResults[i];
-      const file = req.files[i];
-      totalSize += result.bytes;
-      
-      await Upload.create({
-        batchId: batchId,
-        configId: config.id,
-        originalName: file.originalname,
-        cloudinaryPublicId: result.public_id,
-        cloudinaryUrl: result.url,
-        cloudinarySecureUrl: result.secure_url,
-        fileSize: result.bytes,
-        width: result.width,
-        height: result.height,
-        format: result.format
-      });
+
+    if (storageProvider === 'cloudinary') {
+      CloudinaryService.configureCloudinary(config.api_name, config.api_key, config.api_secret_raw);
+      uploadResults = await CloudinaryService.uploadMultipleImages(req.files);
+      for (let i = 0; i < uploadResults.length; i++) {
+        const result = uploadResults[i];
+        const file = req.files[i];
+        totalSize += result.bytes;
+        await Upload.create({
+          batchId: batchId,
+          configId: config.id,
+          originalName: file.originalname,
+          cloudinaryPublicId: result.public_id,
+          cloudinaryUrl: result.url,
+          cloudinarySecureUrl: result.secure_url,
+          fileSize: result.bytes,
+          width: result.width,
+          height: result.height,
+          format: result.format
+        });
+      }
+    } else if (storageProvider === 'bunny') {
+      // Bunny Storage upload
+      const BunnyStorageService = require('../services/bunnyStorageService');
+      const BunnyConfig = require('../models/BunnyConfig');
+      // Get decrypted Bunny config for the current Cloudinary config
+      const bunnyConfig = await BunnyConfig.getDecryptedConfig(config.id);
+      if (!bunnyConfig || !bunnyConfig.storage_zone || !bunnyConfig.api_key) {
+        return res.redirect('/upload?error=No Bunny Storage configuration found for this account');
+      }
+      const bunnyService = new BunnyStorageService(bunnyConfig.storage_zone, bunnyConfig.api_key, bunnyConfig.region || 'de');
+      for (let i = 0; i < req.files.length; i++) {
+        const file = req.files[i];
+        const result = await bunnyService.uploadFile(file.buffer, file.originalname);
+        totalSize += file.size;
+        
+        // Get the public URL using the pull zone
+        const publicUrl = bunnyService.getPublicUrl(file.originalname, bunnyConfig.pull_zone);
+        
+        await Upload.create({
+          batchId: batchId,
+          configId: config.id,
+          originalName: file.originalname,
+          cloudinaryPublicId: `batch_${batchId}`,
+          cloudinaryUrl: publicUrl,
+          cloudinarySecureUrl: publicUrl,
+          fileSize: file.size,
+          width: null,
+          height: null,
+          format: path.extname(file.originalname).replace('.', ''),
+          bunnyUrl: result.url
+        });
+      }
+    } else {
+      return res.redirect('/upload?error=Invalid storage provider selected');
     }
 
-    // Update batch totals
-    await UploadBatch.updateTotals(batchId, uploadResults.length, totalSize);
-
-    res.redirect('/upload?success=' + encodeURIComponent(`Successfully uploaded ${uploadResults.length} image(s)`) + '&batchId=' + batchId);
+    await UploadBatch.updateTotals(batchId, req.files.length, totalSize);
+    res.redirect('/upload?success=' + encodeURIComponent(`Successfully uploaded ${req.files.length} image(s)`) + '&batchId=' + batchId);
   } catch (error) {
     console.error('Upload error:', error);
     res.redirect('/upload?error=Upload failed: ' + error.message);

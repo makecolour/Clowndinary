@@ -10,19 +10,34 @@ class Upload {
         cloudinaryPublicId,
         cloudinaryUrl,
         cloudinarySecureUrl,
+        bunnyUrl,
         fileSize,
         width,
         height,
         format
       } = uploadData;
 
+      // Ensure all fields are null if undefined
+      const values = [
+        batchId ?? null,
+        configId ?? null,
+        originalName ?? null,
+        cloudinaryPublicId ?? null,
+        cloudinaryUrl ?? null,
+        cloudinarySecureUrl ?? null,
+        bunnyUrl ?? null,
+        fileSize ?? null,
+        width ?? null,
+        height ?? null,
+        format ?? null
+      ];
+
       const [result] = await pool.execute(
         `INSERT INTO uploads 
          (batch_id, config_id, original_name, cloudinary_public_id, cloudinary_url, 
-          cloudinary_secure_url, file_size, width, height, format) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [batchId, configId, originalName, cloudinaryPublicId, cloudinaryUrl, 
-         cloudinarySecureUrl, fileSize, width, height, format]
+          cloudinary_secure_url, bunny_url, file_size, width, height, format) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        values
       );
       return result.insertId;
     } catch (error) {
