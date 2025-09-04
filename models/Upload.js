@@ -58,6 +58,32 @@ class Upload {
     }
   }
 
+  static async findByConfigIdAndDateRange(configId, startDate, endDate) {
+    try {
+      const [rows] = await pool.execute(
+        `SELECT * FROM uploads 
+         WHERE config_id = ? AND created_at BETWEEN ? AND ?
+         ORDER BY created_at DESC`,
+        [configId, startDate, endDate]
+      );
+      return rows;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  static async findByPublicId(publicId) {
+    try {
+      const [rows] = await pool.execute(
+        'SELECT * FROM uploads WHERE cloudinary_public_id = ? LIMIT 1',
+        [publicId]
+      );
+      return rows[0] || null;
+    } catch (error) {
+      throw error;
+    }
+  }
+
   static async generateCSV(uploads, batchInfo = null) {
     try {
       let csvContent = 'Batch Name,Original Name,Cloudinary URL,Secure URL,File Size (KB),Width,Height,Format,Upload Date\n';

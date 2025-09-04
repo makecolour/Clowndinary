@@ -4,10 +4,16 @@
             <i class="fas fa-tachometer-alt me-2"></i>
             Dashboard
         </h1>
-        <a href="/upload" class="btn btn-primary">
-            <i class="fas fa-upload me-2"></i>
-            Upload Images
-        </a>
+        <div>
+            <a href="/sync" class="btn btn-warning me-2">
+                <i class="fas fa-sync-alt me-2"></i>
+                Sync to Bunny
+            </a>
+            <a href="/upload" class="btn btn-primary">
+                <i class="fas fa-upload me-2"></i>
+                Upload Images
+            </a>
+        </div>
     </div>
 
     <% if (locals.error) { %>

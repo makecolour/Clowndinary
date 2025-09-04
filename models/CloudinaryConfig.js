@@ -75,6 +75,18 @@ class CloudinaryConfig {
     }
   }
 
+  static async findById(id) {
+    try {
+      const [rows] = await pool.execute(
+        'SELECT * FROM cloudinary_configs WHERE id = ?',
+        [id]
+      );
+      return rows[0] || null;
+    } catch (error) {
+      throw error;
+    }
+  }
+
   static async authenticate(apiName, apiKey, apiSecret) {
     try {
       const config = await this.findByApiName(apiName);

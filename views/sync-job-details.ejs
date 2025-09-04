@@ -1,0 +1,306 @@
+<div class="container-fluid" ng-app="clowndinaryApp" ng-controller="SyncJobDetailsController">
+  <div class="row">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>
+          <i class="fas fa-file-alt me-2"></i>
+          Sync Job #<%= job.id %>
+        </h1>
+        <div>
+          <a href="/sync" class="btn btn-outline-primary me-2">
+            <i class="fas fa-sync-alt me-2"></i>
+            All Sync Jobs
+          </a>
+          <a href="/dashboard" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-2"></i>
+            Dashboard
+          </a>
+        </div>
+      </div>
+
+      <!-- Job Status Card -->
+      <div class="row">
+        <div class="col-12">
+          <div class="card job-header-card mb-4">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3 class="card-title mb-0">
+                  <i class="fas fa-info-circle me-2"></i>
+                  Job Information
+                </h3>
+                <span class="job-status-badge" ng-class="'status-' + jobData.status">
+                  <i class="fas" ng-class="getStatusIcon(jobData.status)"></i>
+                  {{jobData.status.replace('_', ' ').toUpperCase()}}
+                </span>
+              </div>
+              
+              <div class="job-info-grid">
+                <div class="info-item">
+                  <div class="info-icon">
+                    <i class="fas fa-calendar-range"></i>
+                  </div>
+                  <div class="info-details">
+                    <div class="info-label">Date Range</div>
+                    <div class="info-value">{{formatDateRange(jobData.start_date, jobData.end_date)}}</div>
+                  </div>
+                </div>
+                
+                <div class="info-item">
+                  <div class="info-icon">
+                    <i class="fas fa-clock"></i>
+                  </div>
+                  <div class="info-details">
+                    <div class="info-label">Created</div>
+                    <div class="info-value">{{formatDate(jobData.created_at)}}</div>
+                  </div>
+                </div>
+                
+                <div class="info-item" ng-if="jobData.updated_at !== jobData.created_at">
+                  <div class="info-icon">
+                    <i class="fas fa-sync-alt"></i>
+                  </div>
+                  <div class="info-details">
+                    <div class="info-label">Last Updated</div>
+                    <div class="info-value">{{formatDate(jobData.updated_at)}}</div>
+                  </div>
+                </div>
+                
+                <div class="info-item" ng-if="jobData.total_files > 0">
+                  <div class="info-icon">
+                    <i class="fas fa-chart-pie"></i>
+                  </div>
+                  <div class="info-details">
+                    <div class="info-label">Progress</div>
+                    <div class="info-value">{{getProgress()}}% Complete</div>
+                  </div>
+                </div>
+              </div>
+              
+              <div ng-if="jobData.error_message" class="alert alert-danger mt-3" role="alert">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>Error:</strong> {{jobData.error_message}}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Progress and Stats -->
+      <div class="row" ng-if="jobData.total_files > 0">
+        <div class="col-12">
+          <div class="card progress-card mb-4">
+            <div class="card-body">
+              <h4 class="card-title">
+                <i class="fas fa-chart-bar me-2"></i>
+                Sync Progress
+              </h4>
+              
+              <div class="progress-container mb-4">
+                <div class="progress-fill" ng-style="{'width': getProgress() + '%'}">
+                  <span class="progress-text">{{getProgress()}}%</span>
+                </div>
+              </div>
+              
+              <div class="job-stats">
+                <div class="stat-card">
+                  <div class="stat-icon">
+                    <i class="fas fa-files"></i>
+                  </div>
+                  <div class="stat-info">
+                    <div class="stat-value">{{jobData.total_files}}</div>
+                    <div class="stat-label">Total Files</div>
+                  </div>
+                </div>
+                
+                <div class="stat-card">
+                  <div class="stat-icon success">
+                    <i class="fas fa-check-circle"></i>
+                  </div>
+                  <div class="stat-info">
+                    <div class="stat-value">{{jobData.synced_files}}</div>
+                    <div class="stat-label">Successfully Synced</div>
+                  </div>
+                </div>
+                
+                <div class="stat-card">
+                  <div class="stat-icon danger">
+                    <i class="fas fa-times-circle"></i>
+                  </div>
+                  <div class="stat-info">
+                    <div class="stat-value">{{jobData.failed_files}}</div>
+                    <div class="stat-label">Failed</div>
+                  </div>
+                </div>
+                
+                <div class="stat-card">
+                  <div class="stat-icon info">
+                    <i class="fas fa-tasks"></i>
+                  </div>
+                  <div class="stat-info">
+                    <div class="stat-value">{{jobData.synced_files + jobData.failed_files}}</div>
+                    <div class="stat-label">Processed</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sync Logs -->
+      <div class="row">
+        <div class="col-12">
+          <div class="card logs-card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <h4 class="mb-0">
+                <i class="fas fa-list-alt me-2"></i>
+                Sync Logs
+                <span class="badge bg-secondary ms-2">{{logs.length}} entries</span>
+              </h4>
+              <div ng-if="isActiveJob">
+                <button class="btn btn-sm btn-outline-primary" ng-click="refreshLogs()">
+                  <i class="fas fa-sync-alt me-1" ng-class="{'fa-spin': isRefreshing}"></i>
+                  Refresh
+                </button>
+              </div>
+            </div>
+            
+            <div class="card-body p-0">
+              <div ng-if="logs.length > 0" class="logs-container">
+                <div class="log-entry" ng-repeat="log in logs" ng-class="'log-' + log.status">
+                  <div class="log-icon">
+                    <i class="fas" ng-class="getLogIcon(log.status)"></i>
+                  </div>
+                  
+                  <div class="log-content">
+                    <div class="log-filename">
+                      <i class="fas fa-file me-1"></i>
+                      {{log.original_name}}
+                    </div>
+                    
+                    <div class="log-details">
+                      <div class="log-detail-item">
+                        <span class="log-detail-label">
+                          <i class="fas fa-cloud me-1"></i>
+                          Cloudinary ID:
+                        </span>
+                        <span class="log-detail-value">{{log.cloudinary_public_id}}</span>
+                      </div>
+                      
+                      <div class="log-detail-item" ng-if="log.bunny_url">
+                        <span class="log-detail-label">
+                          <i class="fas fa-link me-1"></i>
+                          Bunny URL:
+                        </span>
+                        <a href="{{log.bunny_url}}" target="_blank" class="log-detail-link">
+                          {{log.bunny_url}}
+                        </a>
+                      </div>
+                      
+                      <div class="log-detail-item" ng-if="log.error_message">
+                        <span class="log-detail-label">
+                          <i class="fas fa-exclamation-triangle me-1"></i>
+                          Error:
+                        </span>
+                        <span class="log-detail-error">{{log.error_message}}</span>
+                      </div>
+                      
+                      <div class="log-timestamp">
+                        <i class="fas fa-clock me-1"></i>
+                        {{formatDate(log.synced_at)}}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="log-status">
+                    <span class="log-status-badge" ng-class="'status-' + log.status">
+                      {{log.status.toUpperCase()}}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+              <div ng-if="logs.length === 0" class="empty-state">
+                <i class="fas fa-list-alt"></i>
+                <h4>No sync logs yet</h4>
+                <p>Logs will appear here as files are processed during the sync operation.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  angular.module('clowndinaryApp', []).controller('SyncJobDetailsController', function($scope, $timeout, $http) {
+    $scope.jobData = <%- typeof job !== 'undefined' && job ? JSON.stringify(job) : '{}' %>;
+    $scope.logs = <%- typeof logs !== 'undefined' && logs ? JSON.stringify(logs) : '[]' %>;
+    $scope.isRefreshing = false;
+    $scope.isActiveJob = $scope.jobData && ['pending', 'running'].includes($scope.jobData.status);
+    
+    $scope.formatDate = function(dateString) {
+      return new Date(dateString).toLocaleString();
+    };
+    
+    $scope.formatDateRange = function(startDate, endDate) {
+      if (!startDate || !endDate) return 'Invalid date range';
+      
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      
+      const options = { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric'
+      };
+      
+      return start.toLocaleDateString('en-US', options) + ' - ' + end.toLocaleDateString('en-US', options);
+    };
+    
+    $scope.getProgress = function() {
+      if ($scope.jobData.total_files === 0) return 0;
+      return Math.round((($scope.jobData.synced_files + $scope.jobData.failed_files) / $scope.jobData.total_files) * 100);
+    };
+    
+    $scope.getStatusIcon = function(status) {
+      const iconMap = {
+        'pending': 'fa-clock',
+        'running': 'fa-spinner fa-spin',
+        'completed': 'fa-check-circle',
+        'completed_with_errors': 'fa-exclamation-triangle',
+        'failed': 'fa-times-circle'
+      };
+      return iconMap[status] || 'fa-question-circle';
+    };
+    
+    $scope.getLogIcon = function(status) {
+      return status === 'success' ? 'fa-check-circle' : 'fa-times-circle';
+    };
+    
+    $scope.refreshLogs = function() {
+      $scope.isRefreshing = true;
+      $http.get('/sync/job/' + $scope.jobData.id + '/logs')
+        .then(function(response) {
+          $scope.logs = response.data.logs;
+          $scope.jobData = response.data.job;
+          $scope.isActiveJob = ['pending', 'running'].includes($scope.jobData.status);
+          toastr.success('Logs refreshed successfully');
+        })
+        .catch(function(error) {
+          toastr.error('Failed to refresh logs');
+        })
+        .finally(function() {
+          $scope.isRefreshing = false;
+        });
+    };
+    
+    // Auto-refresh if job is still running
+    if ($scope.isActiveJob) {
+      $timeout(function() {
+        window.location.reload();
+      }, 5000);
+    }
+  });
+</script>

@@ -1,0 +1,373 @@
+<div class="container-fluid" ng-app="clowndinaryApp" ng-controller="BunnyConfigController">
+  <div class="row">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>
+          <i class="fas fa-cog me-2"></i>
+          Bunny Storage Configuration
+        </h1>
+        <div>
+          <a href="/sync" class="btn btn-outline-primary me-2">
+            <i class="fas fa-sync-alt me-2"></i>
+            Sync Jobs
+          </a>
+          <a href="/dashboard" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-2"></i>
+            Dashboard
+          </a>
+        </div>
+      </div>
+
+      <!-- Configuration Form -->
+      <div class="row justify-content-center">
+        <div class="col-lg-8">
+          <div class="card config-form-card">
+            <div class="card-body">
+              <h3 class="card-title">
+                <i class="fas fa-server me-2"></i>
+                Storage Settings
+              </h3>
+              <p class="card-text mb-4">Configure your Bunny Storage credentials and settings for file synchronization.</p>
+              
+              <form method="POST" action="/sync/bunny-config" ng-submit="saveConfig($event)">
+                <div class="form-floating mb-3">
+                  <input 
+                    type="text" 
+                    class="form-control" 
+                    id="storageZone" 
+                    name="storageZone" 
+                    placeholder="Storage Zone"
+                    ng-model="config.storageZone"
+                    required
+                    value="<%= bunnyConfig ? bunnyConfig.storage_zone : '' %>"
+                  >
+                  <label for="storageZone">
+                    <i class="fas fa-database me-2"></i>
+                    Storage Zone Name
+                  </label>
+                </div>
+
+                <div class="form-floating mb-3">
+                  <input 
+                    type="password" 
+                    class="form-control" 
+                    id="apiKey" 
+                    name="apiKey" 
+                    placeholder="API Key"
+                    ng-model="config.apiKey"
+                    required
+                    value="<%= bunnyConfig ? '••••••••••••••••' : '' %>"
+                  >
+                  <label for="apiKey">
+                    <i class="fas fa-key me-2"></i>
+                    API Key (Storage Password)
+                  </label>
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label">
+                    <i class="fas fa-map-marker-alt me-2"></i>
+                    Storage Region
+                  </label>
+                  <input type="hidden" id="region" name="region" value="<%= bunnyConfig ? bunnyConfig.region : 'de' %>">
+                  <div class="region-grid">
+                    <div class="region-option" data-region="de" ng-click="selectRegion('de')">
+                      <div class="region-flag">🇩🇪</div>
+                      <div class="region-name">Frankfurt, DE</div>
+                      <div class="region-endpoint">storage.bunnycdn.com</div>
+                    </div>
+                    <div class="region-option" data-region="uk" ng-click="selectRegion('uk')">
+                      <div class="region-flag">🇬🇧</div>
+                      <div class="region-name">London, UK</div>
+                      <div class="region-endpoint">uk.storage.bunnycdn.com</div>
+                    </div>
+                    <div class="region-option" data-region="ny" ng-click="selectRegion('ny')">
+                      <div class="region-flag">🇺🇸</div>
+                      <div class="region-name">New York, US</div>
+                      <div class="region-endpoint">ny.storage.bunnycdn.com</div>
+                    </div>
+                    <div class="region-option" data-region="la" ng-click="selectRegion('la')">
+                      <div class="region-flag">🇺🇸</div>
+                      <div class="region-name">Los Angeles, US</div>
+                      <div class="region-endpoint">la.storage.bunnycdn.com</div>
+                    </div>
+                    <div class="region-option" data-region="sg" ng-click="selectRegion('sg')">
+                      <div class="region-flag">🇸🇬</div>
+                      <div class="region-name">Singapore, SG</div>
+                      <div class="region-endpoint">sg.storage.bunnycdn.com</div>
+                    </div>
+                    <div class="region-option" data-region="se" ng-click="selectRegion('se')">
+                      <div class="region-flag">🇸🇪</div>
+                      <div class="region-name">Stockholm, SE</div>
+                      <div class="region-endpoint">se.storage.bunnycdn.com</div>
+                    </div>
+                    <div class="region-option" data-region="br" ng-click="selectRegion('br')">
+                      <div class="region-flag">🇧🇷</div>
+                      <div class="region-name">São Paulo, BR</div>
+                      <div class="region-endpoint">br.storage.bunnycdn.com</div>
+                    </div>
+                    <div class="region-option" data-region="jh" ng-click="selectRegion('jh')">
+                      <div class="region-flag">🇿🇦</div>
+                      <div class="region-name">Johannesburg, SA</div>
+                      <div class="region-endpoint">jh.storage.bunnycdn.com</div>
+                    </div>
+                    <div class="region-option" data-region="syd" ng-click="selectRegion('syd')">
+                      <div class="region-flag">🇦🇺</div>
+                      <div class="region-name">Sydney, AU</div>
+                      <div class="region-endpoint">syd.storage.bunnycdn.com</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form-floating mb-3">
+                  <input 
+                    type="text" 
+                    class="form-control" 
+                    id="pullZone" 
+                    name="pullZone" 
+                    placeholder="Pull Zone URL"
+                    ng-model="config.pullZone"
+                    value="<%= bunnyConfig ? (bunnyConfig.pull_zone || '') : '' %>"
+                  >
+                  <label for="pullZone">
+                    <i class="fas fa-globe me-2"></i>
+                    Pull Zone URL (Optional)
+                  </label>
+                  <div class="form-text">Your CDN URL for public file access (e.g., myzone.b-cdn.net)</div>
+                </div>
+
+                <div class="form-floating mb-3">
+                  <input 
+                    type="text" 
+                    class="form-control" 
+                    id="rootFolder" 
+                    name="rootFolder" 
+                    placeholder="Root Folder"
+                    ng-model="config.rootFolder"
+                    value="<%= bunnyConfig ? (bunnyConfig.root_folder || '') : '' %>"
+                  >
+                  <label for="rootFolder">
+                    <i class="fas fa-folder me-2"></i>
+                    Root Folder (Optional)
+                  </label>
+                  <div class="form-text">Folder where synced files will be stored (e.g., uploads)</div>
+                </div>
+
+                <div class="form-floating mb-4">
+                  <input 
+                    type="password" 
+                    class="form-control" 
+                    id="ftpPassword" 
+                    name="ftpPassword" 
+                    placeholder="FTP Password"
+                    ng-model="config.ftpPassword"
+                  >
+                  <label for="ftpPassword">
+                    <i class="fas fa-lock me-2"></i>
+                    FTP Password (Optional)
+                  </label>
+                  <div class="form-text">FTP password if different from API key</div>
+                </div>
+
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                  <button 
+                    type="button" 
+                    class="btn btn-outline-secondary me-md-2"
+                    ng-click="testConnection()"
+                    ng-disabled="isTesting || !isFormValid()"
+                  >
+                    <i class="fas fa-plug me-2" ng-class="{'fa-spin': isTesting}"></i>
+                    <span ng-if="!isTesting">Test Connection</span>
+                    <span ng-if="isTesting">Testing...</span>
+                  </button>
+                  <button 
+                    type="submit" 
+                    class="btn btn-primary"
+                    ng-disabled="isSaving"
+                  >
+                    <i class="fas fa-save me-2" ng-class="{'fa-spin': isSaving}"></i>
+                    <span ng-if="!isSaving">Save Configuration</span>
+                    <span ng-if="isSaving">Saving...</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Current Configuration Status -->
+      <div class="row justify-content-center mt-4" ng-if="hasConfig">
+        <div class="col-lg-8">
+          <div class="card config-status-card">
+            <div class="card-body">
+              <h4 class="card-title">
+                <i class="fas fa-info-circle me-2"></i>
+                Current Configuration
+              </h4>
+              
+              <div class="config-status-grid">
+                <div class="status-item">
+                  <div class="status-icon">
+                    <i class="fas fa-database"></i>
+                  </div>
+                  <div class="status-details">
+                    <div class="status-label">Storage Zone</div>
+                    <div class="status-value">{{currentConfig.storage_zone || 'Not configured'}}</div>
+                  </div>
+                </div>
+                
+                <div class="status-item">
+                  <div class="status-icon">
+                    <i class="fas fa-map-marker-alt"></i>
+                  </div>
+                  <div class="status-details">
+                    <div class="status-label">Region</div>
+                    <div class="status-value">{{getRegionName(currentConfig.region) || 'Not configured'}}</div>
+                  </div>
+                </div>
+                
+                <div class="status-item">
+                  <div class="status-icon">
+                    <i class="fas fa-key"></i>
+                  </div>
+                  <div class="status-details">
+                    <div class="status-label">API Key</div>
+                    <div class="status-value">{{currentConfig.api_key ? '••••••••••••••••' : 'Not configured'}}</div>
+                  </div>
+                </div>
+                
+                <div class="status-item">
+                  <div class="status-icon">
+                    <i class="fas fa-globe"></i>
+                  </div>
+                  <div class="status-details">
+                    <div class="status-label">Pull Zone</div>
+                    <div class="status-value">{{currentConfig.pull_zone || 'Not configured'}}</div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="mt-3" ng-if="currentConfig.created_at">
+                <small class="text-muted">
+                  <i class="fas fa-clock me-1"></i>
+                  Last updated: {{formatDate(currentConfig.updated_at || currentConfig.created_at)}}
+                </small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Get or create the Angular module
+  
+  angular.module('clowndinaryApp', []).controller('BunnyConfigController', function($scope, $http) {
+    $scope.config = {
+      storageZone: '',
+      apiKey: '',
+      region: 'de',
+      pullZone: '',
+      rootFolder: '',
+      ftpPassword: ''
+    };
+    
+    $scope.isTesting = false;
+    $scope.isSaving = false;
+    $scope.hasConfig = <%= typeof bunnyConfig !== 'undefined' && bunnyConfig ? 'true' : 'false' %>;
+    $scope.currentConfig = <%- typeof bunnyConfig !== 'undefined' && bunnyConfig ? JSON.stringify(bunnyConfig) : '{}' %>;
+    
+    $scope.regionMap = {
+      'de': 'Frankfurt, DE',
+      'uk': 'London, UK',
+      'ny': 'New York, US',
+      'la': 'Los Angeles, US', 
+      'sg': 'Singapore, SG',
+      'se': 'Stockholm, SE',
+      'br': 'São Paulo, BR',
+      'jh': 'Johannesburg, SA',
+      'syd': 'Sydney, AU'
+    };
+    
+    $scope.isFormValid = function() {
+      return $scope.config.storageZone && $scope.config.apiKey && $scope.config.region;
+    };
+    
+    $scope.getRegionName = function(region) {
+      return $scope.regionMap[region] || region;
+    };
+    
+    $scope.formatDate = function(dateString) {
+      return new Date(dateString).toLocaleString();
+    };
+    
+    $scope.selectRegion = function(region) {
+      $scope.config.region = region;
+      document.getElementById('region').value = region;
+      
+      // Update visual selection
+      const options = document.querySelectorAll('.region-option');
+      options.forEach(opt => opt.classList.remove('selected'));
+      document.querySelector(`[data-region="${region}"]`).classList.add('selected');
+    };
+    
+    $scope.testConnection = function() {
+      if (!$scope.isFormValid()) {
+        toastr.warning('Please fill in required fields (Storage Zone, API Key, Region) before testing.');
+        return;
+      }
+      
+      $scope.isTesting = true;
+      
+      $http.post('/sync/test-bunny-connection', $scope.config)
+        .then(function(response) {
+          toastr.success('Connection test successful!');
+        })
+        .catch(function(error) {
+          const message = error.data && error.data.error ? error.data.error : 'Connection test failed';
+          toastr.error(message);
+        })
+        .finally(function() {
+          $scope.isTesting = false;
+        });
+    };
+    
+    $scope.saveConfig = function(event) {
+      $scope.isSaving = true;
+      toastr.info('Saving configuration...');
+      // Form will submit normally
+    };
+    
+    // Initialize form with current config
+    if ($scope.hasConfig) {
+      $scope.config = {
+        storageZone: $scope.currentConfig.storage_zone || '',
+        apiKey: $scope.currentConfig.api_key || '',
+        region: $scope.currentConfig.region || 'de',
+        pullZone: $scope.currentConfig.pull_zone || '',
+        rootFolder: $scope.currentConfig.root_folder || '',
+        ftpPassword: ''
+      };
+    }
+    
+    // Set initial region selection
+    $scope.$evalAsync(function() {
+      const currentRegion = $scope.config.region;
+      const regionOption = document.querySelector(`[data-region="${currentRegion}"]`);
+      if (regionOption) {
+        regionOption.classList.add('selected');
+      }
+    });
+    
+    // Show success/error messages
+    <% if (success) { %>
+      toastr.success('<%- success %>');
+    <% } %>
+    <% if (error) { %>
+      toastr.error('<%- error %>');
+    <% } %>
+  });
+</script>

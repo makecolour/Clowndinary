@@ -149,6 +149,22 @@ class UploadBatch {
       throw error;
     }
   }
+
+  static async findSyncBatch(configId) {
+    try {
+      const [rows] = await pool.execute(
+        `SELECT * FROM upload_batches 
+         WHERE config_id = ? AND batch_name = 'Cloudinary Sync Batch' 
+         ORDER BY created_at DESC 
+         LIMIT 1`,
+        [configId]
+      );
+      return rows[0] || null;
+    } catch (error) {
+      console.error('Error finding sync batch:', error);
+      throw error;
+    }
+  }
 }
 
 module.exports = UploadBatch;

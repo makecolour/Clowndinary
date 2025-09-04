@@ -80,6 +80,60 @@ async function initializeDatabase() {
       )
     `);
     
+    // Create bunny_configs table
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS bunny_configs (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        cloudinary_config_id INT NOT NULL,
+        storage_zone VARCHAR(255) NOT NULL,
+        api_key TEXT NOT NULL,
+        region VARCHAR(10) DEFAULT 'de',
+        pull_zone VARCHAR(255),
+        root_folder VARCHAR(255),
+        ftp_password TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (cloudinary_config_id) REFERENCES cloudinary_configs(id) ON DELETE CASCADE,
+        UNIQUE KEY unique_cloudinary_config (cloudinary_config_id)
+      )
+    `);
+    
+    // Create sync_jobs table
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS sync_jobs (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        cloudinary_config_id INT NOT NULL,
+        start_date DATE NOT NULL,
+        end_date DATE NOT NULL,
+        status ENUM('pending', 'running', 'completed', 'completed_with_errors', 'failed') DEFAULT 'pending',
+        total_files INT DEFAULT 0,
+        synced_files INT DEFAULT 0,
+        failed_files INT DEFAULT 0,
+        error_message TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (cloudinary_config_id) REFERENCES cloudinary_configs(id) ON DELETE CASCADE,
+        INDEX idx_config_status (cloudinary_config_id, status),
+        INDEX idx_created_at (created_at DESC)
+      )
+    `);
+    
+    // Create sync_logs table
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS sync_logs (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        sync_job_id INT NOT NULL,
+        upload_id INT NOT NULL,
+        status ENUM('success', 'failed') NOT NULL,
+        bunny_url TEXT,
+        error_message TEXT,
+        synced_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (sync_job_id) REFERENCES sync_jobs(id) ON DELETE CASCADE,
+        FOREIGN KEY (upload_id) REFERENCES uploads(id) ON DELETE CASCADE,
+        INDEX idx_job_status (sync_job_id, status)
+      )
+    `);
+    
     connection.release();
     console.log('Database initialized successfully');
   } catch (error) {
