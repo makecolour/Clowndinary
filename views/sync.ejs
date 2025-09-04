@@ -467,12 +467,7 @@
       }
     };
     
-    // Auto-refresh if there are active jobs
-    if ($scope.hasActiveJobs) {
-      $timeout(function() {
-        window.location.reload();
-      }, 5000);
-    }
+    // Auto-refresh removed per user request
     
     // Initialize default dates
     $scope.setDefaultDates();

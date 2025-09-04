@@ -296,11 +296,6 @@
         });
     };
     
-    // Auto-refresh if job is still running
-    if ($scope.isActiveJob) {
-      $timeout(function() {
-        window.location.reload();
-      }, 5000);
-    }
+    // Auto-refresh removed per user request
   });
 </script>
