@@ -7,6 +7,8 @@
     "start:single": "node ./bin/www-single",
     "start:dev": "NODE_ENV=development node ./bin/www",
     "start:prod": "NODE_ENV=production node ./bin/www",
+    "start:safe": "NODE_CLUSTERS=1 node ./bin/www",
+    "start:web-only": "WORKER_TYPE=web node ./bin/www",
     "pm2:start": "pm2 start ecosystem.config.json --only clowndinary-web",
     "pm2:start:prod": "pm2 start ecosystem.config.json --only clowndinary-web --env production",
     "pm2:start:clustered": "pm2 start ecosystem.config.json --only clowndinary-clustered",

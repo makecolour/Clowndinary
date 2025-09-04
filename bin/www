@@ -20,12 +20,15 @@ var port = normalizePort(process.env.PORT || '3000');
 /**
  * Clustering configuration
  */
-const numCPUs = clusterConfig.workers;
+const numCPUs = parseInt(process.env.NODE_CLUSTERS) || clusterConfig.workers;
 const syncWorkers = Math.max(1, Math.floor(numCPUs * 0.3)); // 30% for sync workers
-const webWorkers = numCPUs - syncWorkers;
+const webWorkers = Math.max(1, numCPUs - syncWorkers); // Ensure at least 1 web worker
 let workerRestarts = {};
 
-if (cluster.isMaster) {
+// Force single process mode if only 1 CPU or NODE_CLUSTERS=1
+const forceSingleProcess = numCPUs === 1 || process.env.WORKER_TYPE === 'web';
+
+if (cluster.isMaster && !forceSingleProcess) {
   if (clusterConfig.logging) {
     console.log(`Master ${process.pid} is running`);
     console.log(`Starting ${webWorkers} web workers and ${syncWorkers} sync workers...`);
@@ -110,6 +113,11 @@ if (cluster.isMaster) {
   });
 
 } else {
+  // Single process mode or worker process
+  if (forceSingleProcess && cluster.isMaster) {
+    console.log(`Running in single process mode (${numCPUs === 1 ? 'single CPU' : 'forced'})`);
+  }
+  
   const workerType = process.env.WORKER_TYPE || 'web';
   
   if (workerType === 'web') {
@@ -141,14 +149,20 @@ if (cluster.isMaster) {
         process.exit(0);
       });
     });
-  } else {
-    // Sync workers handle background sync tasks
-    const SyncCoordinator = require('../services/syncCoordinator');
-    global.syncCoordinator = new SyncCoordinator();
-    
+  } else if (workerType === 'sync') {
+    // Sync workers handle background sync tasks only - NO HTTP SERVER
     if (clusterConfig.logging) {
       console.log(`Sync worker ${process.pid} started and ready for sync tasks`);
     }
+
+    // Set up message handling for sync tasks
+    process.on('message', (message) => {
+      if (message.type === 'SYNC_TASK') {
+        // Handle sync task
+        const SyncService = require('../services/syncService');
+        // Process sync task here
+      }
+    });
 
     // Graceful shutdown for sync workers
     process.on('SIGTERM', () => {

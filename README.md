@@ -1,6 +1,21 @@
 # Clowndinary - Cloudinary Image Upload Manager
 
-A sophisticated web application built with Express.js that allows users to manage their Cloudinary credentials and upload images with advanced batch organization and export capabilities. Now featuring high-performance clustering for efficient multi-core utilization.
+A sophisticated web application built with Express.js that allows users to manage their Cloudinary credentials and upload images with 3. **Sync Features**:
+   - **Fault Tolerance**: Automatic retry logic with exponential backoff
+   - **Progress Tracking**: Real-time sync progress and detailed logging
+   - **Error Categorization**: Network, timeout, client, and server error classification
+   - **Public URL Generation**: Automatic CDN URL generation for synchronized files
+   - **Multi-Region Support**: Deploy content across global edge locations
+   - **Job Management**: Cancel running jobs, retry failed jobs, and bulk operations
+   - **Distributed Processing**: Enhanced sync performance with multi-worker coordination
+   - **Job Statistics**: Real-time monitoring of sync job performance and success rates
+
+4. **Advanced Job Control**:
+   - **Individual Job Management**: Cancel or retry specific sync jobs
+   - **Bulk Operations**: Cancel all running jobs or retry all failed jobs
+   - **Real-time Status**: Live job status updates and progress monitoring
+   - **Intelligent Retry**: Failed jobs automatically retry with improved parameters
+   - **Job History**: Complete audit trail of all sync operationsed batch organization and export capabilities. Now featuring high-performance clustering for efficient multi-core utilization.
 
 ## Features
 
@@ -272,6 +287,13 @@ PORT=3000                    # Application port
 - `GET /sync/job/:jobId` - Detailed sync job progress and logs
 - `GET /sync/api/job/:jobId/progress` - Real-time sync progress (AJAX endpoint)
 
+### Job Management API Routes
+- `POST /sync/api/job/:jobId/cancel` - Cancel a specific sync job
+- `POST /sync/api/jobs/cancel-all` - Cancel all running sync jobs
+- `POST /sync/api/job/:jobId/retry` - Retry a failed sync job
+- `POST /sync/api/jobs/retry-all` - Retry all failed sync jobs
+- `GET /sync/api/jobs/stats` - Get comprehensive job statistics and performance metrics
+
 ## Technologies Used
 
 ### Backend
@@ -347,7 +369,8 @@ Clowndinary/
 ├── services/
 │   ├── bunnyStorageService.js  # BunnyCDN API integration
 │   ├── cloudinaryService.js   # Cloudinary API integration
-│   └── syncService.js    # Sync orchestration and management
+│   ├── syncService.js    # Sync orchestration and management
+│   └── syncCoordinator.js # Distributed sync coordination and job management
 └── views/
     ├── bunny-config.ejs  # BunnyCDN storage configuration
     ├── dashboard.ejs     # Main dashboard with upload batches
@@ -394,6 +417,53 @@ Clowndinary/
 - **Public URL Generation**: Automatic CDN URL creation for synchronized content
 
 For detailed clustering configuration and deployment options, see [CLUSTERING.md](CLUSTERING.md).
+
+## Troubleshooting
+
+### Port Binding Issues (EADDRINUSE)
+
+If you encounter port binding errors during clustering:
+
+```bash
+# Option 1: Use single process mode
+npm run start:single
+
+# Option 2: Force web-only mode
+npm run start:web-only
+
+# Option 3: Use single cluster
+npm run start:safe
+
+# Option 4: Specify custom port
+PORT=8080 npm start
+```
+
+### Memory Issues
+
+For high-memory environments, adjust clustering:
+
+```bash
+# Limit to 2 workers
+NODE_CLUSTERS=2 npm start
+
+# Disable sync workers completely
+WORKER_TYPE=web npm start
+```
+
+### Production Deployment
+
+For production servers, use PM2:
+
+```bash
+# Standard production deployment
+npm run pm2:start:prod
+
+# Monitor processes
+npm run pm2:monitor
+
+# View logs
+npm run pm2:logs
+```
 
 ## License
 
