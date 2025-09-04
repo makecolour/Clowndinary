@@ -7,6 +7,7 @@ var logger = require('morgan');
 var session = require('express-session');
 var MySQLStore = require('express-mysql-session')(session);
 var mysql = require('mysql2');
+var expressLayouts = require('express-ejs-layouts');
 var { initializeDatabase } = require('./config/database');
 var { setUserLocals } = require('./middleware/auth');
 
@@ -21,6 +22,8 @@ initializeDatabase().catch(console.error);
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
+app.use(expressLayouts);
+app.set('layout', 'layout');
 
 app.use(logger('dev'));
 app.use(express.json());

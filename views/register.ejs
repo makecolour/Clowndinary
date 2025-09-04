@@ -1,109 +1,82 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= title %></title>
-    <link rel="icon" type="image/png" href="/images/logo.png">
-    <link rel="stylesheet" href="/stylesheets/style.css">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet">
-</head>
-<body ng-app="clowndinaryApp">
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container">
-            <a class="navbar-brand" href="/">
-                <i class="fas fa-cloud-upload-alt me-2"></i>
-                Clowndinary
-            </a>
-        </div>
-    </nav>
-
-    <main class="container mt-4">
-        <div class="row justify-content-center" ng-controller="RegisterController">
-            <div class="col-md-6 col-lg-4">
-                <div class="card shadow">
-                    <div class="card-body">
-                        <h2 class="card-title text-center mb-4">
-                            <i class="fas fa-user-plus me-2"></i>
-                            Register
-                        </h2>
-                        
-                        <% if (locals.error) { %>
-                            <div class="alert alert-danger" role="alert">
-                                <i class="fas fa-exclamation-triangle me-2"></i>
-                                <%= error %>
-                            </div>
-                        <% } %>
-                        
-                        <% if (locals.success) { %>
-                            <div class="alert alert-success" role="alert">
-                                <i class="fas fa-check-circle me-2"></i>
-                                <%= success %>
-                            </div>
-                        <% } %>
-
-                        <form method="POST" action="/register" ng-submit="submitRegister($event)">
-                            <div class="mb-3">
-                                <label for="apiName" class="form-label">Cloudinary Cloud Name</label>
-                                <input type="text" class="form-control" id="apiName" name="apiName" ng-model="registerData.apiName" required>
-                                <div class="form-text">Your Cloudinary cloud name</div>
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label for="apiKey" class="form-label">API Key</label>
-                                <input type="text" class="form-control" id="apiKey" name="apiKey" ng-model="registerData.apiKey" required>
-                                <div class="form-text">Your Cloudinary API key</div>
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label for="apiSecret" class="form-label">API Secret</label>
-                                <input type="password" class="form-control" id="apiSecret" name="apiSecret" ng-model="registerData.apiSecret" required>
-                                <div class="form-text">Your Cloudinary API secret</div>
-                            </div>
-                            
-                            <button type="submit" class="btn btn-success w-100 mb-3" ng-disabled="isLoading">
-                                <i class="fas fa-user-plus me-2" ng-class="{'fa-spinner fa-spin': isLoading}"></i>
-                                <span ng-if="!isLoading">Register</span>
-                                <span ng-if="isLoading">Validating & Registering...</span>
-                            </button>
-                        </form>
-                        
-                        <div class="text-center">
-                            <p class="mb-0">Already registered? 
-                                <a href="/login" class="text-decoration-none">Login here</a>
-                            </p>
-                        </div>
+<div class="row justify-content-center" ng-app="clowndinaryApp" ng-controller="RegisterController">
+    <div class="col-md-6 col-lg-4">
+        <div class="card shadow">
+            <div class="card-body">
+                <h2 class="card-title text-center mb-4">
+                    <i class="fas fa-user-plus me-2"></i>
+                    Register
+                </h2>
+                
+                <% if (locals.error) { %>
+                    <div class="alert alert-danger" role="alert">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <%= error %>
                     </div>
+                <% } %>
+                
+                <% if (locals.success) { %>
+                    <div class="alert alert-success" role="alert">
+                        <i class="fas fa-check-circle me-2"></i>
+                        <%= success %>
+                    </div>
+                <% } %>
+
+                <form method="POST" action="/register" ng-submit="submitRegister($event)">
+                    <div class="mb-3">
+                        <label for="apiName" class="form-label">Cloudinary Cloud Name</label>
+                        <input type="text" class="form-control" id="apiName" name="apiName" ng-model="registerData.apiName" required>
+                        <div class="form-text">Your Cloudinary cloud name</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="apiKey" class="form-label">API Key</label>
+                        <input type="text" class="form-control" id="apiKey" name="apiKey" ng-model="registerData.apiKey" required>
+                        <div class="form-text">Your Cloudinary API key</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="apiSecret" class="form-label">API Secret</label>
+                        <input type="password" class="form-control" id="apiSecret" name="apiSecret" ng-model="registerData.apiSecret" required>
+                        <div class="form-text">Your Cloudinary API secret</div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-success w-100 mb-3" ng-disabled="isLoading">
+                        <i class="fas fa-user-plus me-2" ng-class="{'fa-spinner fa-spin': isLoading}"></i>
+                        <span ng-if="!isLoading">Register</span>
+                        <span ng-if="isLoading">Validating & Registering...</span>
+                    </button>
+                </form>
+                
+                <div class="text-center">
+                    <p class="mb-0">Already registered? 
+                        <a href="/login" class="text-decoration-none">Login here</a>
+                    </p>
                 </div>
             </div>
         </div>
-    </main>
+    </div>
+</div>
 
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
-    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        angular.module('clowndinaryApp', [])
-        .controller('RegisterController', function($scope) {
-            $scope.registerData = {};
-            $scope.isLoading = false;
-            
-            $scope.submitRegister = function(event) {
-                $scope.isLoading = true;
-                toastr.info('Validating Cloudinary credentials...');
-            };
-            
-            // Show messages using toastr
-            <% if (locals.error) { %>
-                toastr.error('<%= error %>');
-            <% } %>
-            <% if (locals.success) { %>
-                toastr.success('<%= success %>');
-            <% } %>
-        });
-    </script>
-</body>
-</html>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+<script>
+    angular.module('clowndinaryApp', [])
+    .controller('RegisterController', function($scope) {
+        $scope.registerData = {};
+        $scope.isLoading = false;
+        
+        $scope.submitRegister = function(event) {
+            $scope.isLoading = true;
+            toastr.info('Validating Cloudinary credentials...');
+        };
+        
+        // Show messages using toastr
+        <% if (locals.error) { %>
+            toastr.error('<%= error %>');
+        <% } %>
+        <% if (locals.success) { %>
+            toastr.success('<%= success %>');
+        <% } %>
+    });
+</script>
