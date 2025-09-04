@@ -86,19 +86,59 @@ class Upload {
 
   static async generateCSV(uploads, batchInfo = null) {
     try {
-      let csvContent = 'Batch Name,Original Name,Cloudinary URL,Secure URL,File Size (KB),Width,Height,Format,Upload Date\n';
+      let csvContent = 'Batch Name,Original Name,Cloudinary URL,Secure URL,File Size (KB),Width,Height,Format,Upload Date,Bunny URL\n';
+      
+      // Get latest Bunny URLs for all uploads in this batch
+      const uploadIds = uploads.map(upload => upload.id);
+      const bunnyUrls = await this.getLatestBunnyUrls(uploadIds);
       
       uploads.forEach(upload => {
         const batchName = batchInfo ? batchInfo.batch_name : (upload.batch_name || 'Unknown');
         const fileSizeKB = Math.round(upload.file_size / 1024);
         const uploadDate = new Date(upload.created_at).toISOString();
+        const bunnyUrl = bunnyUrls[upload.id] || '';
         
-        csvContent += `"${batchName}","${upload.original_name}","${upload.cloudinary_url}","${upload.cloudinary_secure_url}",${fileSizeKB},${upload.width},${upload.height},"${upload.format}","${uploadDate}"\n`;
+        csvContent += `"${batchName}","${upload.original_name}","${upload.cloudinary_url}","${upload.cloudinary_secure_url}",${fileSizeKB},${upload.width},${upload.height},"${upload.format}","${uploadDate}","${bunnyUrl}"\n`;
       });
       
       return csvContent;
     } catch (error) {
       throw error;
+    }
+  }
+
+  static async getLatestBunnyUrls(uploadIds) {
+    try {
+      if (!uploadIds || uploadIds.length === 0) {
+        return {};
+      }
+
+      const placeholders = uploadIds.map(() => '?').join(',');
+      const [rows] = await pool.execute(
+        `SELECT sl.upload_id, sl.bunny_url
+         FROM sync_logs sl
+         INNER JOIN (
+           SELECT upload_id, MAX(synced_at) as latest_sync
+           FROM sync_logs 
+           WHERE upload_id IN (${placeholders}) 
+           AND status = 'success' 
+           AND bunny_url IS NOT NULL
+           GROUP BY upload_id
+         ) latest ON sl.upload_id = latest.upload_id AND sl.synced_at = latest.latest_sync
+         WHERE sl.upload_id IN (${placeholders})`,
+        [...uploadIds, ...uploadIds]
+      );
+
+      // Convert to object with upload_id as key
+      const result = {};
+      rows.forEach(row => {
+        result[row.upload_id] = row.bunny_url;
+      });
+
+      return result;
+    } catch (error) {
+      console.error('Error getting latest Bunny URLs:', error);
+      return {};
     }
   }
 }

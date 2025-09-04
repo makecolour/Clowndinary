@@ -212,8 +212,12 @@ class BunnyStorageService {
     if (!pullZone) {
       return null;
     }
+    
+    // Ensure pull zone doesn't have any protocol prefix
+    const cleanPullZone = pullZone.replace(/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//, '');
+    
     const filePath = folder ? `${folder}/${fileName}` : fileName;
-    return `https://${pullZone}/${filePath}`;
+    return `https://${cleanPullZone}/${filePath}`;
   }
 
   // Generate a sanitized filename from Cloudinary public_id

@@ -45,6 +45,13 @@ router.post('/bunny-config', requireAuth, async function(req, res, next) {
       return res.redirect('/sync/bunny-config?error=Storage Zone and API Key are required');
     }
 
+    // Sanitize pull zone URL - remove any protocol if present
+    let sanitizedPullZone = '';
+    if (pullZone) {
+      // Remove any protocol (http://, https://, ftp://, ws://, etc.)
+      sanitizedPullZone = pullZone.replace(/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//, '').trim();
+    }
+
     // Validate Bunny Storage credentials
     const validation = await SyncService.validateBunnyConfig(storageZone, apiKey, region || 'de');
     if (!validation.valid) {
@@ -56,10 +63,10 @@ router.post('/bunny-config', requireAuth, async function(req, res, next) {
     
     if (existingConfig) {
       // Update existing configuration
-      await BunnyConfig.update(configId, storageZone, apiKey, region || 'de', pullZone || '', rootFolder || '', ftpPassword || '');
+      await BunnyConfig.update(configId, storageZone, apiKey, region || 'de', sanitizedPullZone, rootFolder || '', ftpPassword || '');
     } else {
       // Create new configuration
-      await BunnyConfig.create(configId, storageZone, apiKey, region || 'de', pullZone || '', rootFolder || '', ftpPassword || '');
+      await BunnyConfig.create(configId, storageZone, apiKey, region || 'de', sanitizedPullZone, rootFolder || '', ftpPassword || '');
     }
 
     res.redirect('/sync/bunny-config?success=Bunny Storage configuration saved successfully');
