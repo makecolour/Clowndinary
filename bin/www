@@ -7,27 +7,111 @@
 var app = require('../app');
 var debug = require('debug')('clowndinary:server');
 var http = require('http');
+var cluster = require('cluster');
+var os = require('os');
+var clusterConfig = require('../config/cluster');
 
 /**
  * Get port from environment and store in Express.
  */
 
 var port = normalizePort(process.env.PORT || '3000');
-app.set('port', port);
 
 /**
- * Create HTTP server.
+ * Clustering configuration
  */
+const numCPUs = clusterConfig.workers;
+let workerRestarts = {};
 
-var server = http.createServer(app);
+if (cluster.isMaster) {
+  if (clusterConfig.logging) {
+    console.log(`Master ${process.pid} is running`);
+    console.log(`Starting ${numCPUs} workers...`);
+    console.log(`CPU cores available: ${os.cpus().length}`);
+  }
 
-/**
- * Listen on provided port, on all network interfaces.
- */
+  // Fork workers
+  for (let i = 0; i < numCPUs; i++) {
+    const worker = cluster.fork();
+    workerRestarts[worker.id] = 0;
+  }
 
-server.listen(port);
-server.on('error', onError);
-server.on('listening', onListening);
+  cluster.on('exit', (worker, code, signal) => {
+    if (clusterConfig.logging) {
+      console.log(`Worker ${worker.process.pid} died with code ${code} and signal ${signal}`);
+    }
+
+    if (clusterConfig.autoRestart) {
+      // Check if we've exceeded max restarts
+      workerRestarts[worker.id] = (workerRestarts[worker.id] || 0) + 1;
+      
+      if (workerRestarts[worker.id] <= clusterConfig.maxRestarts) {
+        if (clusterConfig.logging) {
+          console.log(`Restarting worker ${worker.id} (attempt ${workerRestarts[worker.id]}/${clusterConfig.maxRestarts})`);
+        }
+        
+        setTimeout(() => {
+          const newWorker = cluster.fork();
+          workerRestarts[newWorker.id] = workerRestarts[worker.id];
+          delete workerRestarts[worker.id];
+        }, clusterConfig.restartDelay);
+      } else {
+        console.error(`Worker ${worker.id} exceeded maximum restart attempts (${clusterConfig.maxRestarts})`);
+      }
+    }
+  });
+
+  cluster.on('online', (worker) => {
+    if (clusterConfig.logging) {
+      console.log(`Worker ${worker.process.pid} is online`);
+    }
+  });
+
+  // Graceful shutdown
+  process.on('SIGTERM', () => {
+    console.log('Master received SIGTERM, shutting down gracefully...');
+    cluster.disconnect(() => {
+      process.exit(0);
+    });
+  });
+
+  process.on('SIGINT', () => {
+    console.log('Master received SIGINT, shutting down gracefully...');
+    cluster.disconnect(() => {
+      process.exit(0);
+    });
+  });
+
+} else {
+  // Workers can share any TCP port
+  app.set('port', port);
+
+  /**
+   * Create HTTP server.
+   */
+
+  var server = http.createServer(app);
+
+  /**
+   * Listen on provided port, on all network interfaces.
+   */
+
+  server.listen(port);
+  server.on('error', onError);
+  server.on('listening', onListening);
+
+  if (clusterConfig.logging) {
+    console.log(`Worker ${process.pid} started and listening on port ${port}`);
+  }
+
+  // Graceful shutdown for workers
+  process.on('SIGTERM', () => {
+    console.log(`Worker ${process.pid} received SIGTERM, shutting down gracefully...`);
+    server.close(() => {
+      process.exit(0);
+    });
+  });
+}
 
 /**
  * Normalize a port into a number, string, or false.
@@ -86,5 +170,5 @@ function onListening() {
   var bind = typeof addr === 'string'
     ? 'pipe ' + addr
     : 'port ' + addr.port;
-  debug('Listening on ' + bind);
+  debug(`Worker ${process.pid} listening on ${bind}`);
 }
