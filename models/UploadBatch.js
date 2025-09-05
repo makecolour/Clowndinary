@@ -75,7 +75,7 @@ class UploadBatch {
         const batches = [];
         for (const batch of batchRows) {
           const [uploadRows] = await pool.execute(
-            `SELECT id, original_name, cloudinary_url, cloudinary_secure_url,
+            `SELECT id, original_name, cloudinary_url, cloudinary_secure_url, bunny_url,
                     file_size, width, height, format, created_at
              FROM uploads
              WHERE batch_id = ?

@@ -122,8 +122,15 @@
                                                         <%= upload.original_name %>
                                                     </h6>
                                                     <small class="text-muted">
-                                                        <%= upload.width %>x<%= upload.height %> • 
+                                                        <% if (upload.width && upload.height) { %>
+                                                            <%= upload.width %>x<%= upload.height %> • 
+                                                        <% } %>
                                                         <%= Math.round(upload.file_size / 1024) %> KB
+                                                        <% if (upload.bunny_url) { %>
+                                                            • <span class="badge bg-warning text-dark">Bunny</span>
+                                                        <% } else { %>
+                                                            • <span class="badge bg-info">Cloudinary</span>
+                                                        <% } %>
                                                     </small>
                                                 </div>
                                                 <div class="card-footer p-2">
