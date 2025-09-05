@@ -109,6 +109,7 @@ router.post('/register', redirectIfAuth, async function(req, res, next) {
 router.get('/dashboard', requireAuth, async function(req, res, next) {
   try {
     const batches = await UploadBatch.findByConfigIdGroupedByDate(req.session.cloudinaryConfig.id);
+    console.log('Dashboard batches data:', JSON.stringify(batches, null, 2));
     res.render('dashboard', { 
       title: 'Dashboard - Clowndinary',
       batches: batches,

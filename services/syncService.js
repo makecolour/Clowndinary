@@ -105,6 +105,11 @@ class SyncService {
               { public_id: result.file }
             );
             await SyncJob.createSyncLog(jobId, tempUpload.id, 'success', result.result?.url);
+            
+            // Update the upload record with Bunny URL
+            if (result.result?.url && tempUpload.id > 0) {
+              await Upload.updateBunnyUrl(tempUpload.id, result.result.url);
+            }
           } else {
             failedCount++;
             // Log failed sync
@@ -203,6 +208,11 @@ class SyncService {
             'success', 
             publicUrl || result.url
           );
+
+          // Update the upload record with Bunny URL
+          if ((publicUrl || result.url) && tempUpload.id > 0) {
+            await Upload.updateBunnyUrl(tempUpload.id, publicUrl || result.url);
+          }
 
           syncedCount++;
           console.log(`✅ Synced ${fileName} (${syncedCount}/${cloudinaryFiles.length})`);

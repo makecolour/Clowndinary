@@ -156,6 +156,19 @@ class Upload {
       return {};
     }
   }
+
+  static async updateBunnyUrl(uploadId, bunnyUrl) {
+    try {
+      const [result] = await pool.execute(
+        'UPDATE uploads SET bunny_url = ? WHERE id = ?',
+        [bunnyUrl, uploadId]
+      );
+      return result.affectedRows > 0;
+    } catch (error) {
+      console.error('Error updating bunny URL:', error);
+      throw error;
+    }
+  }
 }
 
 module.exports = Upload;
